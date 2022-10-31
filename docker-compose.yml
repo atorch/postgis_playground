@@ -1,0 +1,32 @@
+version: "3"
+
+services:
+  db:
+    image: mdillon/postgis:11-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: itme
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: playground
+    volumes:
+      - ./postgis-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  main:
+    user: root
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PGHOST: db
+      PGUSER: itme
+      PGPASSWORD: secret
+      PG_PASSWORD: secret
+      WAIT_HOSTS: db:5432
+      WAIT_HOSTS_TIMEOUT: 60
+    volumes:
+      - ./:/opt/main
+    depends_on:
+      - db
+    tty: true
