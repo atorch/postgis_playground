@@ -22,6 +22,7 @@ docker-compose exec main bash
 ./insert_states.sh
 psql -U itme playground
 SELECT name, statefp FROM states LIMIT 2;
+SELECT name, ST_Area(wkb_geometry::geography) as area_m2 FROM states LIMIT 3;
 ```
 
 ```bash
