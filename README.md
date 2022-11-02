@@ -7,8 +7,6 @@ and some other commands to find a large convex area that doesn't contain any roa
 (and even more fun, but probably very difficult and slow, would be to find the
 _largest_ convex area in some US state that doesn't contain any roads).
 
-TODO Add script that downloads necessary shapefiles from https://www2.census.gov/geo/tiger/TIGER2022/
-
 ```bash
 docker-compose build --pull
 ```
