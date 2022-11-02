@@ -19,10 +19,12 @@ docker-compose -f docker-compose.yml up
 
 ```bash
 docker-compose exec main bash
-./insert_states.sh
+./insert_shapefiles.sh
 psql -U itme playground
 SELECT name, statefp FROM states LIMIT 2;
 SELECT name, ST_Area(wkb_geometry::geography) as area_m2 FROM states LIMIT 3;
+SELECT c.name AS county_name, ST_Area(c.wkb_geometry::geography) as area_m2
+FROM counties AS c JOIN states AS s ON ST_Contains(s.wkb_geometry, c.wkb_geometry) WHERE s.name = 'Illinois' LIMIT 3;
 ```
 
 ```bash

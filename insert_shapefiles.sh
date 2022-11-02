@@ -1,7 +1,10 @@
 #!/bin/bash
 
-STATE_SHAPEFILE=tl_2021_us_state/tl_2021_us_state.shp
+STATE_SHAPEFILE=tl_2022_us_state/tl_2022_us_state.shp
 STATE_TABLE=states
+
+COUNTY_SHAPEFILE=tl_2022_us_county/tl_2022_us_county.shp
+COUNTY_TABLE=counties
 
 PG_HOST=db
 PG_PORT=5432
@@ -30,3 +33,17 @@ ogr2ogr -f "PostgreSQL" \
 	--config PG_USE_COPY $PG_USE_COPY \
 	-gt $FEATURES_PER_TRANSACTION \
 	-overwrite
+
+echo "Inserting $COUNTY_SHAPEFILE into $COUNTY_TABLE"
+ogr2ogr -f "PostgreSQL" \
+	PG:"host=$PG_HOST port=$PG_PORT user=$PG_USER dbname=$PG_DBNAME" \
+	-nlt PROMOTE_TO_MULTI \
+	$COUNTY_SHAPEFILE \
+	-nln $COUNTY_TABLE \
+	-t_SRS $TO_CRS \
+	-lco OVERWRITE=$OGR_LAYER_OVERWRITE \
+	--config OGR_TRUNCATE $OGR_TRUNCATE \
+	--config PG_USE_COPY $PG_USE_COPY \
+	-gt $FEATURES_PER_TRANSACTION \
+	-overwrite
+
