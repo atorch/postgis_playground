@@ -6,6 +6,9 @@ STATE_TABLE=states
 COUNTY_SHAPEFILE=tl_2022_us_county/tl_2022_us_county.shp
 COUNTY_TABLE=counties
 
+ROAD_SHAPEFILE=tl_2022_06027_roads/tl_2022_06027_roads.shp
+ROAD_TABLE=roads
+
 PG_HOST=db
 PG_PORT=5432
 PG_DBNAME=playground
@@ -19,6 +22,8 @@ FEATURES_PER_TRANSACTION=10000
 
 psql --host $PG_HOST --port $PG_PORT --user $PG_USER $PG_DBNAME <<EOF
 DROP TABLE IF EXISTS $STATE_TABLE CASCADE;
+DROP TABLE IF EXISTS $COUNTY_TABLE CASCADE;
+DROP TABLE IF EXISTS $ROAD_TABLE CASCADE;
 EOF
 
 echo "Inserting $STATE_SHAPEFILE into $STATE_TABLE"
@@ -47,3 +52,15 @@ ogr2ogr -f "PostgreSQL" \
 	-gt $FEATURES_PER_TRANSACTION \
 	-overwrite
 
+echo "Inserting $ROAD_SHAPEFILE into $ROAD_TABLE"
+ogr2ogr -f "PostgreSQL" \
+	PG:"host=$PG_HOST port=$PG_PORT user=$PG_USER dbname=$PG_DBNAME" \
+	-nlt PROMOTE_TO_MULTI \
+	$ROAD_SHAPEFILE \
+	-nln $ROAD_TABLE \
+	-t_SRS $TO_CRS \
+	-lco OVERWRITE=$OGR_LAYER_OVERWRITE \
+	--config OGR_TRUNCATE $OGR_TRUNCATE \
+	--config PG_USE_COPY $PG_USE_COPY \
+	-gt $FEATURES_PER_TRANSACTION \
+	-overwrite
