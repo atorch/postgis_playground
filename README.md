@@ -41,11 +41,20 @@ With a little help from https://gis.stackexchange.com/questions/4502/selecting-f
 \o /opt/main/convex_areas_without_roads.geojson
 \t on
 
-SELECT ST_AsGeoJSON(p.buffered_geom) as road_fid FROM (SELECT ST_Buffer((ST_Dump(ST_GeneratePoints(wkb_geometry, 100))).geom::geography, 4000) as buffered_geom FROM counties AS c WHERE c.geoid = '06027') AS p LEFT JOIN roads as r ON ST_Intersects(p.buffered_geom::geography, r.wkb_geometry::geography) WHERE r.ogc_fid IS NULL;
+SELECT ST_AsGeoJSON(p.buffered_geom) FROM (SELECT ST_Buffer((ST_Dump(ST_GeneratePoints(wkb_geometry, 100))).geom::geography, 4000) as buffered_geom FROM counties AS c WHERE c.geoid = '06027') AS p LEFT JOIN roads as r ON ST_Intersects(p.buffered_geom::geography, r.wkb_geometry::geography) WHERE r.ogc_fid IS NULL;
 ```
 
-# TODO Query planner, spatial index for ST_Intersects
-# TODO Combine geojson lines back into single geojson?
+This version combines multiple rows of Polygons back into a single MultiPolygon:
+
+```
+\o /opt/main/convex_areas_without_roads.geojson
+\t on
+
+SELECT ST_AsGeoJSON(ST_Collect(ARRAY(SELECT p.buffered_geom::geometry FROM (SELECT ST_Buffer((ST_Dump(ST_GeneratePoints(wkb_geometry, 400))).geom::geography, 9000) as buffered_geom FROM counties AS c WHERE c.geoid = '06027') AS p LEFT JOIN roads as r ON ST_Intersects(p.buffered_geom::geography, r.wkb_geometry::geography) WHERE r.ogc_fid IS NULL)));
+```
+
+TODO/Note: buffered points can spill outside of the county
+TODO Query planner, spatial index for ST_Intersects
 
 ```bash
 docker-compose exec main bash -c "psql -U itme playground"
