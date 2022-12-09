@@ -35,27 +35,43 @@ SELECT (ST_Dump(ST_GeneratePoints(wkb_geometry, 5))).geom as point_geom FROM cou
 SELECT ST_AsGeoJSON(ST_Buffer((ST_Dump(ST_GeneratePoints(wkb_geometry, 5))).geom::geography, 500)) as point_geom FROM counties AS c WHERE c.geoid = '06027';
 ```
 
-With a little help from https://gis.stackexchange.com/questions/4502/selecting-features-that-do-not-intersect-in-postgis:
+## First Approach
 
-```bash
-\o /opt/main/convex_areas_without_roads.geojson
-\t on
-
-SELECT ST_AsGeoJSON(p.buffered_geom) FROM (SELECT ST_Buffer((ST_Dump(ST_GeneratePoints(wkb_geometry, 100))).geom::geography, 4000) as buffered_geom FROM counties AS c WHERE c.geoid = '06027') AS p LEFT JOIN roads as r ON ST_Intersects(p.buffered_geom::geography, r.wkb_geometry::geography) WHERE r.ogc_fid IS NULL;
-```
-
-This version combines multiple rows of Polygons back into a single MultiPolygon:
-
-```
-\o /opt/main/convex_areas_without_roads.geojson
-\t on
-
-SELECT ST_AsGeoJSON(ST_Collect(ARRAY(SELECT p.buffered_geom::geometry FROM (SELECT ST_Buffer((ST_Dump(ST_GeneratePoints(wkb_geometry, 400))).geom::geography, 9000) as buffered_geom FROM counties AS c WHERE c.geoid = '06027') AS p LEFT JOIN roads as r ON ST_Intersects(p.buffered_geom::geography, r.wkb_geometry::geography) WHERE r.ogc_fid IS NULL)));
-```
-
-TODO/Note: buffered points can spill outside of the county
-TODO Query planner, spatial index for ST_Intersects
+In words: select a random set of points within the county, buffer them, check for intersection with roads, and return only the buffered areas that intersect zero roads.
 
 ```bash
 docker-compose exec main bash -c "psql -U itme playground"
 ```
+
+With a little help from https://gis.stackexchange.com/questions/4502/selecting-features-that-do-not-intersect-in-postgis:
+
+```
+\o /opt/main/convex_areas_without_roads_v1.geojson
+\t on
+
+SELECT ST_AsGeoJSON(ST_Collect(ARRAY(SELECT p.buffered_geom::geometry FROM (SELECT ST_Buffer((ST_Dump(ST_GeneratePoints(ST_Buffer(wkb_geometry::geography, -9000)::geometry, 1000))).geom::geography, 9000) as buffered_geom FROM counties AS c WHERE c.geoid = '06027') AS p LEFT JOIN roads as r ON ST_Intersects(p.buffered_geom::geography, r.wkb_geometry::geography) WHERE r.ogc_fid IS NULL)));
+```
+
+## Second Approach
+
+In words: buffer the roads, subtract that area from the county, select a point from the resulting county-not-buffered-roads, and then buffer that point.
+
+```
+\o /opt/main/convex_areas_without_roads_v2_difference.geojson
+\t on
+
+SELECT ST_AsGeoJSON(ST_Difference((SELECT wkb_geometry FROM counties WHERE geoid = '06027'), ST_Union(ARRAY(SELECT ST_Buffer(wkb_geometry::geography, 9000)::geometry FROM roads))));
+```
+
+TODO Try with negative buffer on county
+
+```
+\o /opt/main/convex_areas_without_roads_v2.geojson
+\t on
+
+SELECT ST_AsGeoJSON(ST_Buffer(ST_GeneratePoints(ST_Difference((SELECT wkb_geometry FROM counties WHERE geoid = '06027'), ST_Union(ARRAY(SELECT ST_Buffer(wkb_geometry::geography, 9000)::geometry FROM roads))), 1)::geography, 9000));
+```
+
+TODO Query planner, spatial index for ST_Intersects
+
+TODO Update Dockerfile, try a newer version of postgis, see http://blog.cleverelephant.ca/2009/01/must-faster-unions-in-postgis-14.html
