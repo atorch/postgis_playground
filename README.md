@@ -73,5 +73,3 @@ SELECT ST_AsGeoJSON(ST_Buffer(ST_GeneratePoints(ST_Difference((SELECT wkb_geomet
 ```
 
 TODO Query planner, spatial index for ST_Intersects
-
-TODO Update Dockerfile, try a newer version of postgis, see http://blog.cleverelephant.ca/2009/01/must-faster-unions-in-postgis-14.html
