@@ -7,12 +7,11 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  Build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Docker Compose Up
-        run: docker-compose -f docker-compose.yml up
+        run: docker-compose -f docker-compose.yml up -d
       - name: Run psql
         run: docker-compose exec main bash -c "psql --version"
-
