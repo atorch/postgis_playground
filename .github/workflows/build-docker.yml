@@ -13,5 +13,3 @@ jobs:
       - uses: actions/checkout@v3
       - name: Docker Compose Up
         run: docker-compose -f docker-compose.yml up -d
-      - name: Run psql
-        run: docker-compose exec main bash -c "psql --version"
