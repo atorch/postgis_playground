@@ -1,0 +1,15 @@
+name: Docker Compose
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Docker Compose Up
+        run: docker-compose -f docker-compose.yml up -d
